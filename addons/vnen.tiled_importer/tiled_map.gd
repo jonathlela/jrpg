@@ -121,7 +121,11 @@ func build():
 					return "Error parsing tileset file %s." % [tileset_src]
 
 				ts = _parse_tileset(tsparser)
+			ts.source_dir = tileset_src.get_base_dir()
 			ts.firstgid = int(tstemp.firstgid)
+
+		if not ts.has("source_dir"):
+			ts.source_dir = options.basedir
 
 		var tileset = null
 		if options.single_tileset:
@@ -200,7 +204,7 @@ func build():
 
 			if not has_global_img and "image" in ts.tiles[rel_id]:
 				var _img = ts.tiles[rel_id].image
-				image_path = options.basedir.plus_file(_img) if _img.is_rel_path() else _img
+				image_path = ts.source_dir.plus_file(_img) if _img.is_rel_path() else _img
 				_img = _img.get_file().basename()
 				image = _load_image(image_path, target_dir, "%s_%s_%s.png" % [name, _img, rel_id], cell_size.x, cell_size.y)
 				if typeof(image) == TYPE_STRING:
@@ -517,10 +521,13 @@ func build():
 					if tileset == null:
 						return "Invalid GID in object layer tile"
 
+					var is_tile_object = tileset.tile_get_region(tileid) == Rect2(0, 0, 0, 0)
 					var sprite = Sprite.new()
 					sprite.set_texture(tileset.tile_get_texture(tileid))
-					sprite.set_region(true)
-					sprite.set_region_rect(tileset.tile_get_region(tileid))
+
+					if not is_tile_object:
+						sprite.set_region(true)
+						sprite.set_region_rect(tileset.tile_get_region(tileid))
 
 					if obj.has("name") and not obj.name.empty():
 						sprite.set_name(obj.name);
@@ -537,6 +544,11 @@ func build():
 						pos.x = float(obj.x)
 					if obj.has("y"):
 						pos.y = float(obj.y)
+					if is_tile_object:
+						# Tile object positions are oriented bottom left.
+						# If we import their positioning data as is, their position ends up skewed incorrectly.
+						pos.x = pos.x + float(obj.width) / 2
+						pos.y = pos.y - float(obj.height) / 2
 					sprite.set_pos(pos)
 
 					var rot = 0
@@ -552,8 +564,14 @@ func build():
 					object.add_child(sprite)
 					sprite.set_owner(scene)
 
-					if options.custom_properties and obj.has("properties") and obj.has("propertytypes"):
-						_set_meta(sprite, obj.properties, obj.propertytypes)
+					if options.custom_properties:
+						var tile = _tile_from_gid(tile_raw_id)
+
+						if tile != null and tile.has("properties") and tile.has("propertytypes"):
+							_set_meta(sprite, tile.properties, tile.propertytypes)
+
+						if obj.has("properties") and obj.has("propertytypes"):
+							_set_meta(sprite, obj.properties, obj.propertytypes)
 
 	if options.custom_properties and data.has("properties") and data.has("propertytypes"):
 		_set_meta(scene, data.properties, data.propertytypes)
@@ -575,6 +593,15 @@ func _tileset_from_gid(gid):
 		var map = tile_id_mapping[map_id]
 		if gid >= map.firstgid and gid < (map.firstgid + map.tilecount):
 			return map.tileset
+
+	return null
+
+# Get a tile based on the global tile id
+func _tile_from_gid(gid):
+	for tileset in data.tilesets:
+		if gid >= tileset.firstgid and gid < (tileset.firstgid + tileset.tilecount):
+			var rel_id = str(gid - tileset.firstgid)
+			return tileset.tiles[rel_id]
 
 	return null
 
@@ -955,6 +982,10 @@ func _parse_tile_data(parser):
 					obj_group.objects = []
 				var obj = _parse_object(parser)
 				obj_group.objects.push_back(obj)
+			elif parser.get_node_name() == "properties":
+				var prop_data = _parse_properties(parser)
+				data["properties"] = prop_data.properties
+				data["propertytypes"] = prop_data.propertytypes
 
 		err = parser.read()
 
