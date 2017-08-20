@@ -12,7 +12,19 @@
 script/script = ExtResource( 2 )
 name = "town_1/house_1"
 
-[node name="characters_grid" type="TileMap" parent="."]
+[node name="obj_front" parent="."]
+
+z/z = 1
+
+[node name="shades" parent="."]
+
+z/z = 1
+
+[node name="lights" parent="."]
+
+z/z = 1
+
+[node name="characters" type="TileMap" parent="."]
 
 mode = 0
 tile_set = null
@@ -21,7 +33,7 @@ cell/quadrant_size = 16
 cell/custom_transform = Matrix32( 1, 0, 0, 1, 0, 0 )
 cell/half_offset = 2
 cell/tile_origin = 0
-cell/y_sort = false
+cell/y_sort = true
 collision/use_kinematic = false
 collision/friction = 1.0
 collision/bounce = 0.0
@@ -31,15 +43,11 @@ occluder/light_mask = 1
 tile_data = IntArray(  )
 script/script = ExtResource( 3 )
 
-[node name="characters" type="YSort" parent="characters_grid"]
-
-sort/enabled = true
-
-[node name="main_char" parent="characters_grid/characters" instance=ExtResource( 4 )]
+[node name="main_char" parent="characters" instance=ExtResource( 4 )]
 
 transform/pos = Vector2( 64, 576 )
 
-[node name="npc1" parent="characters_grid/characters" instance=ExtResource( 5 )]
+[node name="npc1" parent="characters" instance=ExtResource( 5 )]
 
 transform/pos = Vector2( 80, 399 )
 

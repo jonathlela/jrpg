@@ -19,9 +19,9 @@ func is_night():
 	light.set_color(Color(0.36, 0.4, 0.75))
 
 func _ready():
-	var main_char = get_node("characters_grid/characters/main_char")
-	var npc1 = get_node("characters_grid/characters/npc1")
-	var character_grid = get_node("characters_grid")
+	var main_char = get_node("characters/main_char")
+	var npc1 = get_node("characters/npc1")
+	var character_grid = get_node("characters")
 	main_char.get_node("Camera").make_current()
 	main_char.set_playable(true)
 	main_char.register_grid(character_grid)
